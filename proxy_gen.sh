@@ -1,11 +1,16 @@
+#!/usr/bin/env bash
+
+# Requires a target directory to work through for input 1.
+# Requires a directory to output proxy as input 2.
+
+
 exec 1> >(logger -s -t $(basename $0)) 2>&1
 
-path="$1"
-catdv_prx="/Volumes/FTP/CATDVPROXYFOLDER"
-cd "$path"
+cd "$1"
+dest="$2$1"
 
-dest="$catdv_prx$path"
 [ -d "$dest" ] || mkdir -p "$dest"
+
 
 for name in *.mov; do
     if [ ! -e "$dest${name%.*}.mp4" ];
@@ -14,6 +19,7 @@ for name in *.mov; do
         ffmpeg -i "$name" \
         -y \
         -loglevel warning \
+        -t 5 \
         -c:v h264 \
         -b:v 100k \
         -crf 25 \
@@ -26,4 +32,3 @@ for name in *.mov; do
         "$dest/${name%.*}.mp4" > /dev/null 2> /dev/null
     fi
 done
-
