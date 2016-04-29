@@ -1,9 +1,10 @@
+#!/Library/Frameworks/Python.framework/Versions/3.5/bin/python3
 """
 This python script uses ffmpeg to make proxy files from high
 resolution Apple ProRes mov files.
 
 Input 1: Target directory containing the media.
-Input2: Destination directory for proxy files.
+Input 2: Destination directory for proxy files.
 
 Settings can be configured below.
 
@@ -64,7 +65,7 @@ def build_proxy(fname):
         command = [
             FFMPEG_PATH, '-i', fname,
             '-y',
-            '-t', '6',
+            '-loglevel', 'warning',
             '-c:v', 'h264',
             '-b:v', VIDEO_BR,
             '-crf', CRF_VALUE,
@@ -79,7 +80,7 @@ def build_proxy(fname):
             ]
         subprocess.call(command)
     except Exception:
-        print Exception
+        print(Exception)
 
 
 if __name__ == '__main__':
