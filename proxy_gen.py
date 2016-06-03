@@ -23,10 +23,11 @@ import subprocess
 
 # Settings
 FFMPEG_PATH = '/usr/local/bin/ffmpeg'
-CRF_VALUE = '25'
+CRF_VALUE = '35'
 VIDEO_BR = '100' + 'k'
 AUDIO_BR = '96' + 'k'
 PRESET = 'ultrafast'
+FILETYPES = (".mov", ".mxf")
 
 
 if len(sys.argv) > 1:
@@ -37,6 +38,11 @@ else:
 
 
 def scan_files(target):
+    """
+    Checks if proxy destination already exists and creates
+    the folder if not.
+    Searches for mov and mxf videos to create proxy files.
+    """
     destination = dest_dir + target_dir
     if not os.path.exists(destination):
         os.makedirs(destination)
@@ -50,7 +56,7 @@ def scan_files(target):
                     print('Directory exists')
                     continue
         for f in files:
-            if f.endswith(".mov"):
+            if f.lower().endswith(FILETYPES):
                 mov_file = os.path.join(root, f)
                 if '.AppleDouble' in mov_file or '/._' in mov_file:
                     continue
@@ -76,7 +82,7 @@ def build_proxy(fname):
             '-c:a', 'aac',
             '-ac', '2',
             '-b:a', AUDIO_BR,
-            '{}{}.mp4'.format(dest_dir, fname.replace('.mov', ''))
+            '{}{}.mp4'.format(dest_dir, fname.replace(os.path.splitext(fname)[1], ''))
             ]
         subprocess.call(command)
     except Exception:
