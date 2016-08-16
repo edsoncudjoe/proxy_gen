@@ -30,6 +30,9 @@ AUDIO_BR = '96' + 'k'
 PRESET = 'ultrafast'
 FILETYPES = (".mov", ".mxf", ".mpg", ".avi")
 
+# Extra ffmpeg args. To be reviewed
+opts = None
+
 # Set up logging
 fflog = logging.getLogger(__name__)
 fflog.setLevel(logging.DEBUG)
@@ -46,6 +49,10 @@ fflog.addHandler(fhandler)
 if len(sys.argv) > 1:
     target_dir = sys.argv[1]
     dest_dir = sys.argv[2]
+    if sys.argv[3]:
+        opts = sys.argv[3]
+
+    # Remove trailing '/'
     if target_dir[-1] == '/':
         target_dir = target_dir[:-1]
     if dest_dir[-1] == '/':
@@ -83,6 +90,9 @@ def scan_files(target):
                     continue
                 if os.path.isfile(proxy_file):
                     continue
+                if opts != None:
+                    # extra = ' '.join(opts)
+                    build_proxy_options(mov_file)
                 else:
                     build_proxy(mov_file)
             else:
@@ -113,6 +123,43 @@ def build_proxy(fname):
     except Exception:
         print(Exception)
         logging.error('{} : {}'.format(Exception, outfile))
+
+
+
+def build_proxy_options(fname):
+    """
+    Build video proxy using extra ffmpeg arguments
+    """
+    outfile = fname.replace(os.path.splitext(fname)[1], '.mp4')
+    try:
+        command = [
+            FFMPEG_PATH, '-i', fname,
+            '-y',
+            '-loglevel', 'warning',
+            '-map 0:1',
+            '-map 0:2',
+            '-map 0:10',
+            '-c:v', 'h264',
+            '-b:v', VIDEO_BR,
+            '-crf', CRF_VALUE,
+            '-pix_fmt', 'yuv420p',
+            '-vf', 'scale=320:240',
+            '-sws_flags', 'lanczos',
+            '-preset', PRESET,
+            '-c:a', 'aac',
+            '-ac', '2',
+            '-b:a', AUDIO_BR,
+            '{}{}'.format(dest_dir, outfile)
+            ]
+        # print('\tffmpeg command: {}\n'.format(command.join(' ')))
+        print('\t FFmpeg command: {} \n'.format(' '.join(command)))
+        print('\nBuilding proxy file: {}'.format(outfile))
+        subprocess.call(command)
+    except Exception as FE:
+        print(FE)
+        logging.error('{} : {}'.format(FE, outfile))
+
+
 
 if __name__ == '__main__':
     scan_files(target_dir)
