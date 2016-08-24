@@ -1,0 +1,4 @@
+.DS_Store
+.bash_profile
+__pycache__/
+proxy_gen.log
