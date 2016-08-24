@@ -16,7 +16,7 @@ for more information:
     http://ffmpeg.org/trac/ffmpeg/wiki/x264EncodingGuide
 
 """
-
+import argparse
 import logging
 import os
 import sys
@@ -30,8 +30,6 @@ AUDIO_BR = '96' + 'k'
 PRESET = 'ultrafast'
 FILETYPES = (".mov", ".mxf", ".mpg", ".avi")
 
-# Extra ffmpeg args. To be reviewed
-opts = None
 
 # Set up logging
 fflog = logging.getLogger(__name__)
@@ -44,23 +42,31 @@ fhandler.setFormatter(formatter)
 
 fflog.addHandler(fhandler)
 
+# Extra ffmpeg args. To be reviewed
+opts = None
+target_dir = ''
+dest_dir = ''
 
-# Check user input arguments
-if len(sys.argv) > 1:
-    target_dir = sys.argv[1]
-    dest_dir = sys.argv[2]
-    if sys.argv[3]:
-        opts = sys.argv[3]
+parser = argparse.ArgumentParser(description='Proxy file creator')
+parser.add_argument('-i', '--input', help='Choose input file')
+parser.add_argument('-o', '--output', help='Choose output directory')
+parser.add_argument('-au', nargs='+', help="Choose audio channels to map for proxy")
+parser.add_argument('-d', '--info', help='Display info on submitted media')
+arg = parser.parse_args()
 
-    # Remove trailing '/'
+if arg.input:
+    target_dir = arg.input
     if target_dir[-1] == '/':
         target_dir = target_dir[:-1]
+
+if arg.output:
+    dest_dir = arg.output
     if dest_dir[-1] == '/':
         dest_dir = dest_dir[:-1]
-    fflog.info('{}\n{}'.format(target_dir, dest_dir))
-else:
-    print('Please provide an input and output directory')
-
+    
+if arg.au:
+    opts = dict([('-map', a) for a in arg.au])
+    print(opts)
 
 def scan_files(target):
     """
@@ -91,12 +97,18 @@ def scan_files(target):
                 if os.path.isfile(proxy_file):
                     continue
                 if opts != None:
-                    # extra = ' '.join(opts)
                     build_proxy_options(mov_file)
                 else:
                     build_proxy(mov_file)
             else:
                 continue
+
+def display_media_info(fname):
+    try:
+        command = [FFMPEG_PATH, '-i', fname]
+        subprocess.call(command)
+    except Exception as DisplayError:
+        print(DisplayError)
 
 
 def build_proxy(fname):
@@ -119,7 +131,9 @@ def build_proxy(fname):
             '{}{}'.format(dest_dir, outfile)
             ]
         print('\nBuilding proxy file: {}'.format(outfile))
-        subprocess.call(command)
+        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output, errors = p.communicate()
+        print(output)
     except Exception:
         print(Exception)
         logging.error('{} : {}'.format(Exception, outfile))
@@ -136,9 +150,7 @@ def build_proxy_options(fname):
             FFMPEG_PATH, '-i', fname,
             '-y',
             '-loglevel', 'warning',
-            '-map 0:1',
-            '-map 0:2',
-            '-map 0:10',
+            '-map', '0:1 0:2',
             '-c:v', 'h264',
             '-b:v', VIDEO_BR,
             '-crf', CRF_VALUE,
@@ -151,16 +163,20 @@ def build_proxy_options(fname):
             '-b:a', AUDIO_BR,
             '{}{}'.format(dest_dir, outfile)
             ]
-        # print('\tffmpeg command: {}\n'.format(command.join(' ')))
-        print('\t FFmpeg command: {} \n'.format(' '.join(command)))
         print('\nBuilding proxy file: {}'.format(outfile))
-        subprocess.call(command)
+        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output, errors = p.communicate()
+        print(output)
+        
     except Exception as FE:
-        print(FE)
+        print(FE, Exception)
         logging.error('{} : {}'.format(FE, outfile))
 
 
 
 if __name__ == '__main__':
-    scan_files(target_dir)
+    if sys.argv[2].endswith(FILETYPES):
+        display_media_info(sys.argv[2])
+    else:
+        scan_files(target_dir)
 
