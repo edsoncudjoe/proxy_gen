@@ -90,15 +90,20 @@ def scan_files(target):
         for f in files:
             if f.lower().endswith(FILETYPES):
                 mov_file = os.path.join(root, f)
-                proxy_file = dest_dir + mov_file.replace(
+                proxy_mp4 = dest_dir + mov_file.replace(
                         os.path.splitext(mov_file)[1], '.mp4')
+                proxy_mov = dest_dir + mov_file.replace(
+                        os.path.splitext(mov_file)[1], '.mov')
                 if '.AppleDouble' in mov_file or '/._' in mov_file:
                     continue
-                if os.path.isfile(proxy_file):
+                if os.path.isfile(proxy_mp4) or os.path.isfile(proxy_mov):
+                    print('Filescan: proxy has already been made '
+                            'for: {}'.format(f))
                     continue
                 if opts != None:
                     build_proxy_options(mov_file)
                 else:
+                    print('simple build')
                     build_proxy(mov_file)
             else:
                 continue
@@ -108,7 +113,7 @@ def display_media_info(fname):
         command = [FFMPEG_PATH, '-i', fname]
         subprocess.call(command)
     except Exception as DisplayError:
-        print(DisplayError)
+        print('Filescan: {}'.format(DisplayError))
 
 
 def build_proxy(fname):
@@ -136,7 +141,7 @@ def build_proxy(fname):
         print(output)
     except Exception:
         print(Exception)
-        logging.error('{} : {}'.format(Exception, outfile))
+        logging.error('Proxy Build Error: {} : {}'.format(Exception, outfile))
 
 
 
@@ -144,7 +149,9 @@ def build_proxy_options(fname):
     """
     Build video proxy using extra ffmpeg arguments
     """
+    print('\nMULTI')
     outfile = fname.replace(os.path.splitext(fname)[1], '.mp4')
+
     try:
         command = [
             FFMPEG_PATH, '-i', fname,
@@ -170,13 +177,16 @@ def build_proxy_options(fname):
         
     except Exception as FE:
         print(FE, Exception)
-        logging.error('{} : {}'.format(FE, outfile))
+        logging.error('Proxy Build Error: {} : {}'.format(FE, outfile))
 
 
 
 if __name__ == '__main__':
     if sys.argv[2].endswith(FILETYPES):
-        display_media_info(sys.argv[2])
+        try:
+            display_media_info(sys.argv[2])
+        except:
+            print('Filescan: Filetype not support')
     else:
         scan_files(target_dir)
 
